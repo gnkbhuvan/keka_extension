@@ -108,19 +108,24 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
         const latest = data.data[data.data.length - 1];
         const timeEntries = (latest.timeEntries || [])
+          .filter(e => e.punchStatus === 0 || e.punchStatus === 1) // Only IN (0) or OUT (1)
           .slice()
           .sort(
             (a, b) => new Date(a.actualTimestamp) - new Date(b.actualTimestamp)
           );
 
-        // Format entries and remove duplicates (same timestamp + status)
+        // Format entries and remove duplicates
+        // Group by minute (HH:MM) and keep only the first entry for each minute
         const entriesFormatted = [];
         const seen = new Set();
         
         for (const e of timeEntries) {
-          const key = `${e.actualTimestamp}-${e.punchStatus}`;
-          if (!seen.has(key)) {
-            seen.add(key);
+          const date = new Date(e.actualTimestamp);
+          // Create key based on date + hour + minute + status to prevent duplicates at same minute
+          const minuteKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}-${e.punchStatus}`;
+          
+          if (!seen.has(minuteKey)) {
+            seen.add(minuteKey);
             entriesFormatted.push({
               ts: e.actualTimestamp,
               punchStatus: e.punchStatus,
@@ -158,11 +163,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (remainingMs <= 0) {
           remainingMs = 0;
         }
-        if (lastInTime && remainingMs > 0) {
-          expectedOut = new Date(
-            lastInTime.getTime() + remainingMs
-          ).toISOString();
+        
+        // If user is currently clocked IN, calculate from current time
+        if (inTime && remainingMs > 0) {
+          const now = new Date();
+          expectedOut = new Date(now.getTime() + remainingMs).toISOString();
         }
+        // If clocked OUT, can't predict leave time
 
         // Get last OUT
         const outPunches = timeEntries.filter((e) => e.punchStatus === 1);
