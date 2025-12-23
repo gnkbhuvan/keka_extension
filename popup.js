@@ -1,53 +1,259 @@
+// DOM Elements - Main UI
 const statusEl = document.getElementById('status');
 const resultEl = document.getElementById('result');
 const errorEl = document.getElementById('error');
+const errorMessageEl = document.getElementById('error-message');
+const openKekaBtn = document.getElementById('open-keka-btn');
 const refreshBtn = document.getElementById('refresh');
 const dateEl = document.getElementById('date');
 const workedEl = document.getElementById('worked');
 const expectedEl = document.getElementById('expected');
 const entriesEl = document.getElementById('entries');
-const themeToggle = document.getElementById('theme-toggle');
-const themeIcon = document.getElementById('theme-icon');
 
-const sunIcon = `<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>`;
-const moonIcon = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
+// DOM Elements - Settings
+const settingsToggle = document.getElementById('settings-toggle');
+const settingsPanel = document.getElementById('settings-panel');
+const closeSettingsBtn = document.getElementById('close-settings');
+const subdomainInput = document.getElementById('subdomain-input');
+const themeLightBtn = document.getElementById('theme-light');
+const themeDarkBtn = document.getElementById('theme-dark');
+const remindersList = document.getElementById('reminders-list');
+const addReminderBtn = document.getElementById('add-reminder-btn');
 
-function initTheme() {
-  const savedTheme = localStorage.getItem('theme') || 'dark';
-  document.body.setAttribute('data-theme', savedTheme);
-  updateThemeIcon(savedTheme);
+// DOM Elements - Modal
+const reminderModal = document.getElementById('reminder-modal');
+const closeModalBtn = document.getElementById('close-modal');
+const reminderMinutesInput = document.getElementById('reminder-minutes');
+const reminderMessageInput = document.getElementById('reminder-message');
+const cancelReminderBtn = document.getElementById('cancel-reminder');
+const saveReminderBtn = document.getElementById('save-reminder');
+
+// Current settings state
+let currentSettings = {
+  subdomain: 'webosmotic',
+  theme: 'dark',
+  reminders: []
+};
+
+// Initialize
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadSettings();
+  applyTheme(currentSettings.theme);
+  fetchAttendance();
+});
+
+// Load settings from storage
+async function loadSettings() {
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
+    currentSettings = {
+      subdomain: response.subdomain || 'webosmotic',
+      theme: response.theme || 'dark',
+      reminders: response.reminders || []
+    };
+    
+    // Update UI
+    subdomainInput.value = currentSettings.subdomain;
+    updateThemeButtons(currentSettings.theme);
+    renderReminders();
+  } catch (err) {
+    console.error('Failed to load settings:', err);
+  }
 }
 
-function updateThemeIcon(theme) {
-  themeIcon.innerHTML = theme === 'dark' ? sunIcon : moonIcon;
+// Save settings to storage
+async function saveSettings() {
+  try {
+    await chrome.runtime.sendMessage({
+      type: 'SAVE_SETTINGS',
+      settings: {
+        subdomain: currentSettings.subdomain,
+        theme: currentSettings.theme,
+        reminders: currentSettings.reminders
+      }
+    });
+  } catch (err) {
+    console.error('Failed to save settings:', err);
+  }
 }
 
-function toggleTheme() {
-  const currentTheme = document.body.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-  document.body.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
-  updateThemeIcon(newTheme);
+// Theme handling
+function applyTheme(theme) {
+  document.body.setAttribute('data-theme', theme);
+  updateThemeButtons(theme);
 }
 
-themeToggle.addEventListener('click', toggleTheme);
+function updateThemeButtons(theme) {
+  themeLightBtn.classList.toggle('active', theme === 'light');
+  themeDarkBtn.classList.toggle('active', theme === 'dark');
+}
+
+themeLightBtn.addEventListener('click', () => {
+  currentSettings.theme = 'light';
+  applyTheme('light');
+  saveSettings();
+});
+
+themeDarkBtn.addEventListener('click', () => {
+  currentSettings.theme = 'dark';
+  applyTheme('dark');
+  saveSettings();
+});
+
+// Subdomain handling
+let subdomainTimeout;
+subdomainInput.addEventListener('input', () => {
+  clearTimeout(subdomainTimeout);
+  subdomainTimeout = setTimeout(() => {
+    currentSettings.subdomain = subdomainInput.value.trim() || 'webosmotic';
+    saveSettings();
+  }, 500);
+});
+
+// Settings panel toggle
+settingsToggle.addEventListener('click', () => {
+  settingsPanel.classList.remove('hidden');
+});
+
+closeSettingsBtn.addEventListener('click', () => {
+  settingsPanel.classList.add('hidden');
+});
+
+// Reminder management
+function renderReminders() {
+  if (currentSettings.reminders.length === 0) {
+    remindersList.innerHTML = '<div class="empty-reminders">No reminders set</div>';
+    return;
+  }
+  
+  remindersList.innerHTML = currentSettings.reminders.map(reminder => `
+    <div class="reminder-item" data-id="${reminder.id}">
+      <div class="reminder-content">
+        <div class="reminder-time">${reminder.minutesBefore} mins before</div>
+        <div class="reminder-message">${escapeHtml(reminder.message)}</div>
+      </div>
+      <button class="delete-reminder-btn" data-id="${reminder.id}" title="Delete reminder">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+      </button>
+    </div>
+  `).join('');
+  
+  // Attach delete handlers
+  remindersList.querySelectorAll('.delete-reminder-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.id;
+      deleteReminder(id);
+    });
+  });
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function deleteReminder(id) {
+  currentSettings.reminders = currentSettings.reminders.filter(r => r.id !== id);
+  renderReminders();
+  saveSettings();
+}
+
+// Add reminder modal
+addReminderBtn.addEventListener('click', () => {
+  reminderMinutesInput.value = '30';
+  reminderMessageInput.value = '';
+  reminderModal.classList.remove('hidden');
+  reminderMinutesInput.focus();
+});
+
+closeModalBtn.addEventListener('click', () => {
+  reminderModal.classList.add('hidden');
+});
+
+cancelReminderBtn.addEventListener('click', () => {
+  reminderModal.classList.add('hidden');
+});
+
+saveReminderBtn.addEventListener('click', () => {
+  const minutes = parseInt(reminderMinutesInput.value, 10);
+  const message = reminderMessageInput.value.trim();
+  
+  if (!minutes || minutes < 1) {
+    reminderMinutesInput.focus();
+    return;
+  }
+  
+  if (!message) {
+    reminderMessageInput.focus();
+    return;
+  }
+  
+  const newReminder = {
+    id: `reminder_${Date.now()}`,
+    minutesBefore: minutes,
+    message: message
+  };
+  
+  currentSettings.reminders.push(newReminder);
+  renderReminders();
+  saveSettings();
+  reminderModal.classList.add('hidden');
+});
+
+// Close modal on backdrop click
+reminderModal.addEventListener('click', (e) => {
+  if (e.target === reminderModal) {
+    reminderModal.classList.add('hidden');
+  }
+});
+
+// Open Keka Tab button
+openKekaBtn.addEventListener('click', async () => {
+  try {
+    openKekaBtn.disabled = true;
+    openKekaBtn.textContent = 'Opening...';
+    
+    await chrome.runtime.sendMessage({ type: 'OPEN_KEKA_TAB' });
+    
+    // Wait a moment then try to refresh
+    setTimeout(() => {
+      openKekaBtn.textContent = 'Open Keka Tab';
+      openKekaBtn.disabled = false;
+      fetchAttendance();
+    }, 2000);
+  } catch (err) {
+    openKekaBtn.textContent = 'Open Keka Tab';
+    openKekaBtn.disabled = false;
+    console.error('Failed to open Keka tab:', err);
+  }
+});
+
+// Refresh button
 refreshBtn.addEventListener('click', fetchAttendance);
-initTheme();
 
+// Fetch attendance
 async function fetchAttendance() {
   refreshBtn.disabled = true;
   resultEl.classList.add('hidden');
   errorEl.classList.add('hidden');
+  openKekaBtn.classList.add('hidden');
 
   statusEl.innerHTML = '<span class="spinner"></span>Fetching data...';
 
   try {
-    const response = await chrome.runtime.sendMessage({ type: 'FETCH_ATTENDANCE' });
+    const response = await chrome.runtime.sendMessage({ 
+      type: 'FETCH_ATTENDANCE',
+      autoOpenTab: false // Don't auto-open, let user use the button
+    });
 
     if (response.success) {
       displaySuccess(response);
     } else {
-      displayError(response.error);
+      displayError(response.error, response.noTab, response.subdomain);
     }
   } catch (err) {
     displayError('Failed to communicate with extension: ' + err.message);
@@ -93,10 +299,15 @@ function displaySuccess(data) {
   resultEl.classList.remove('hidden');
 }
 
-function displayError(errorMessage) {
+function displayError(errorMessage, showOpenButton = false, subdomain = '') {
   statusEl.innerHTML = 'Failed to fetch';
-  errorEl.textContent = errorMessage;
+  errorMessageEl.textContent = errorMessage;
   errorEl.classList.remove('hidden');
+  
+  if (showOpenButton) {
+    openKekaBtn.classList.remove('hidden');
+    openKekaBtn.textContent = `Open ${subdomain || 'Keka'}.keka.com`;
+  }
 }
 
 function formatDate(dateString) {
@@ -116,33 +327,3 @@ function formatTime(timestamp) {
     hour12: true
   });
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-  // Auto-fetch attendance data on popup open
-  fetchAttendance();
-});
-
-window.addEventListener('beforeunload', () => {
-  if (!resultEl.classList.contains('hidden')) {
-    const entries = Array.from(entriesEl.querySelectorAll('.entry-item')).map(item => {
-      const time = item.querySelector('.entry-time').textContent;
-      const status = item.querySelector('.entry-status').textContent;
-      return {
-        ts: time,
-        punchStatus: status === 'IN' ? 0 : 1
-      };
-    });
-
-    const data = {
-      attendanceDate: dateEl.textContent,
-      totalWorked: workedEl.textContent,
-      expectedOut: expectedEl.textContent,
-      entries: entries
-    };
-
-    localStorage.setItem('lastAttendanceFetch', JSON.stringify({
-      timestamp: Date.now(),
-      data: data
-    }));
-  }
-});

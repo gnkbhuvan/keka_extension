@@ -1,13 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&family=DotGothic16&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&family=DotGothic16&display=swap");
 
 :root {
-  --color-bg: #FFFFFF;
-  --color-surface: #FAFAFA;
-  --color-text: #1A1A1A;
+  --color-bg: #ffffff;
+  --color-surface: #fafafa;
+  --color-text: #1a1a1a;
   --color-text-secondary: #737373;
-  --color-accent: #E2272E;
-  --color-border: #E5E5E5;
-  --color-success: #22C55E;
+  --color-accent: #e2272e;
+  --color-border: #e5e5e5;
+  --color-success: #22c55e;
 
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -19,10 +19,10 @@
 }
 
 [data-theme="dark"] {
-  --color-bg: #0A0A0A;
-  --color-surface: #1A1A1A;
-  --color-text: #FAFAFA;
-  --color-text-secondary: #A3A3A3;
+  --color-bg: #0a0a0a;
+  --color-surface: #1a1a1a;
+  --color-text: #fafafa;
+  --color-text-secondary: #a3a3a3;
   --color-border: #262626;
 }
 
@@ -33,7 +33,7 @@
 }
 
 body {
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 13px;
   font-weight: 400;
   line-height: 1.5;
@@ -62,7 +62,7 @@ h2 {
   letter-spacing: -0.01em;
 }
 
-.theme-toggle {
+.settings-toggle {
   background: transparent;
   border: none;
   padding: var(--spacing-sm);
@@ -70,17 +70,19 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity var(--transition);
+  transition: opacity var(--transition), transform var(--transition);
   opacity: 0.6;
   width: 32px;
   height: 32px;
+  border-radius: 6px;
 }
 
-.theme-toggle:hover {
+.settings-toggle:hover {
   opacity: 1;
+  transform: rotate(30deg);
 }
 
-.theme-toggle svg {
+.settings-toggle svg {
   width: 16px;
   height: 16px;
   color: var(--color-text);
@@ -100,19 +102,19 @@ h2 {
 button#refresh {
   width: 100%;
   background: var(--color-accent);
-  color: #FFFFFF;
+  color: #ffffff;
   border: none;
   padding: 10px;
   border-radius: var(--radius);
   font-size: 13px;
   font-weight: 500;
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
   cursor: pointer;
   transition: all var(--transition);
 }
 
 button#refresh:hover {
-  background: #C81F24;
+  background: #c81f24;
   transform: translateY(-1px);
 }
 
@@ -155,7 +157,7 @@ button#refresh:disabled {
 }
 
 .stat-value {
-  font-family: 'DotGothic16', monospace;
+  font-family: "DotGothic16", monospace;
   font-size: 20px;
   color: var(--color-text);
   letter-spacing: 0.02em;
@@ -183,9 +185,9 @@ button#refresh:disabled {
 }
 
 .highlight-value {
-  font-family: 'DotGothic16', monospace;
+  font-family: "DotGothic16", monospace;
   font-size: 28px;
-  color: #FFFFFF;
+  color: #ffffff;
   letter-spacing: 0.02em;
 }
 
@@ -225,7 +227,7 @@ button#refresh:disabled {
 }
 
 .entry-time {
-  font-family: 'DotGothic16', monospace;
+  font-family: "DotGothic16", monospace;
   font-size: 14px;
   color: var(--color-text);
   letter-spacing: 0.01em;
@@ -260,8 +262,32 @@ button#refresh:disabled {
   border: 1px solid rgba(226, 39, 46, 0.2);
 }
 
+#error-message {
+  margin-bottom: var(--spacing-sm);
+}
+
+.open-keka-btn {
+  width: 100%;
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: "Roboto", sans-serif;
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-top: var(--spacing-sm);
+}
+
+.open-keka-btn:hover {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .spinner {
@@ -289,6 +315,367 @@ button#refresh:disabled {
   text-align: center;
 }
 
+/* Settings Panel */
+.settings-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-bg);
+  z-index: 100;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+}
+
+.settings-panel:not(.hidden) {
+  transform: translateX(0);
+}
+
+.settings-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  padding: var(--spacing-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity var(--transition);
+  border-radius: 6px;
+}
+
+.close-btn:hover {
+  opacity: 1;
+  background: var(--color-surface);
+}
+
+.close-btn svg {
+  color: var(--color-text);
+}
+
+.settings-body {
+  flex: 1;
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+}
+
+.settings-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.settings-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  font-weight: 500;
+}
+
+.subdomain-input-group {
+  display: flex;
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.subdomain-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 10px var(--spacing-md);
+  font-size: 14px;
+  color: var(--color-text);
+  font-family: "Roboto", sans-serif;
+  outline: none;
+}
+
+.subdomain-input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.subdomain-suffix {
+  padding: 10px var(--spacing-md);
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.theme-toggle-group {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.theme-btn {
+  flex: 1;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 10px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "Roboto", sans-serif;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.theme-btn:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.theme-btn.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #ffffff;
+}
+
+.settings-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--spacing-lg) 0;
+}
+
+.reminders-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.reminder-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.reminder-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.reminder-time {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.reminder-message {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.delete-reminder-btn {
+  background: transparent;
+  border: none;
+  padding: var(--spacing-xs);
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.delete-reminder-btn:hover {
+  opacity: 1;
+}
+
+.delete-reminder-btn svg {
+  width: 14px;
+  height: 14px;
+  color: var(--color-accent);
+}
+
+.add-reminder-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  padding: 10px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "Roboto", sans-serif;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.add-reminder-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.add-reminder-btn svg {
+  color: currentColor;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: var(--spacing-md);
+}
+
+.modal-content {
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 300px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.modal-body {
+  padding: var(--spacing-md);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 10px var(--spacing-md);
+  font-size: 14px;
+  color: var(--color-text);
+  font-family: "Roboto", sans-serif;
+  outline: none;
+  transition: border-color var(--transition);
+  resize: none;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: var(--color-accent);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.modal-footer {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.btn-primary,
+.btn-secondary {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "Roboto", sans-serif;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  border: none;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: #c81f24;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface);
+}
+
+/* Empty state */
+.empty-reminders {
+  text-align: center;
+  padding: var(--spacing-lg) var(--spacing-md);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }

@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Keka Attendance Quick",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Fetch Keka in/out times and expected OUT in a popup.",
-  "permissions": ["scripting", "tabs"],
+  "permissions": ["scripting", "tabs", "storage", "alarms", "notifications"],
   "host_permissions": ["https://webosmotic.keka.com/*", "https://*.keka.com/*"],
   "action": {
     "default_popup": "popup.html",
